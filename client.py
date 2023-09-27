@@ -1,5 +1,21 @@
+""" Clients are invoked by a command line such as:
+python zftp-client server_name UDP_Sport
+where server_name is the name of the server and UDP_Sport is the server port. """
 
+from socket import *
+import sys
 
+serverUDPPort = int(sys.argv[2])
+serverName = str(sys.argv[1])
+
+serverAddress = (serverName, serverUDPPort)
+clientSocket = socket(AF_INET, SOCK_DGRAM)
+clientSocket.connect(serverAddress)
+
+def main():
+    pass
+
+main()
 """ 
 • open – this command starts an interaction session, sending to the server 
 the TCP port number where the client will be waiting for connections.

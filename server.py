@@ -1,4 +1,22 @@
+""" The server is launched before the client using the following command:
+python zftp-server UDP_SPort
+where UDP_Sport is the UDP port used by the server to receive commands. """
 
+from socket import *
+import sys
+
+serverUDPPort = int(sys.argv[1])
+serverName = 'localhost'
+
+serverSocket = socket(AF_INET, SOCK_DGRAM)
+serverSocket.bind((serverName, serverUDPPort))
+print("UDP server up and listening")
+print()
+
+def main():
+    pass
+
+main()
 
 """
 • open – The client sends the string open followed by a space and a 5-digit port number. 
