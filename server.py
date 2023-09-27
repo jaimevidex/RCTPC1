@@ -2,44 +2,108 @@
 python zftp-server UDP_SPort
 where UDP_Sport is the UDP port used by the server to receive commands. """
 
+"""
+AS DEFENIÇOES DOS COMMANDOS GET E PUT NAO ESTAO MUITO BEM
+PORQUE NAO PRECEBO O ENUNCIADO
+"""
+
 from socket import *
 import sys
+import os
 
 serverUDPPort = int(sys.argv[1])
 serverName = 'localhost'
+bufferSize = 1024
 
 serverSocket = socket(AF_INET, SOCK_DGRAM)
 serverSocket.bind((serverName, serverUDPPort))
 print("UDP server up and listening")
 print()
 
-def main():
-    pass
+while True:
+    commandSentence, clientAddress = serverSocket.recvfrom(bufferSize)
+    commandSentence = commandSentence.decode()
+    print("Command received: " + commandSentence)
+    print("From: " + str(clientAddress))
+    print()
 
-main()
+    tcpPort = 0 
+    command = commandSentence.split()[0]
 
-"""
-• open – The client sends the string open followed by a space and a 5-digit port number. 
-The server replies with the byte array corresponding to the strings ack or nack.
+    messageToSend = ""
 
-• close – The client sends the string close. 
-The server replies with the byte array corresponding to the strings ack or nack.
+    match command:
+        case 'open':
+            messageToSend = open()       
+        case 'close':
+            messageToSend = "ack"
+        case 'get':
+            messageToSend = get()
+        case 'put':
+            messageToSend = put()
+        case _:
+            messageToSend = "nack 1"
 
-• get – The client sends the string get followed by a space and the name of the file in the server’s file system. 
-The server replies nack if the named file does not exist or ack in the opposite case.
-If the file exists, the server creates a TCP socket, connects it to the TCP_Port of the client, and sends the file contents. 
-After sending all the bytes of the file, closes (and destroys) the socket. 
-The client receives the bytes and writes them in its local system; 
-the closing of the socket by the server indicates the end of the file.
+    serverSocket.sendto(messageToSend.encode(), clientAddress)
 
-• put – The client sends the string put followed by a space and the name of the file in the server’s file system.
-The server replies nack if the named file already exists or ack in the opposite case.
-In the case of success, the server creates a TCP socket, connects it to the TCP_Port of the client and receives the file contents.
-After sending all the bytes of the file, the client closes (and destroys) the socket. 
-The server receives the bytes and writes them to its local system; 
-the closing of the socket by the client indicates the end of the file.
+    def open():
+        message = ""
+        if len(commandSentence.split()) != 2:
+            message = "nack 1";  
+        else:
+            try:
+                tcpPort = int(commandSentence.split()[1])
+                message = "ack"
+            except ValueError:
+                message = "nack 2"
+        return message
 
-Note: the nack reply is a message with the format nack error_number. 
-For example, when trying to get a file that does not exist on the server it will send the message “nack 3”, where 3 is the error number.
+    def get():
+        message = ""
 
-"""
+        if len(commandSentence.split()) != 3:
+            message = "nack 1"
+        elif commandSentence.split()[1] in os.listdir():
+            message = "nack 2"
+        elif commandSentence.split()[1] not in os.listdir():
+            message = "nack 3"
+        else:
+
+            tcpSocket = socket(AF_INET, SOCK_STREAM)
+            tcpSocket.connect((serverName, tcpPort))
+            tcpSocket.send(commandSentence.encode())
+            file = open(commandSentence.split()[1], 'wb')
+            while True:
+                data = tcpSocket.recv(1024)
+                if not data:
+                    break
+                file.write(data)
+            file.close()    
+            tcpSocket.close()
+
+        return message
+
+    def put():
+        message = ""
+
+        if len(commandSentence.split()) != 3:
+            message = "nack 1"
+        elif commandSentence.split()[1] in os.listdir():
+            message = "nack 2"
+        elif commandSentence.split()[1] not in os.listdir():
+            message = "nack 3"
+        else:
+
+            tcpSocket = socket(AF_INET, SOCK_STREAM)
+            tcpSocket.connect((serverName, tcpPort))
+            tcpSocket.send(commandSentence.encode())
+            file = open(commandSentence.split()[1], 'rb')
+            while True:
+                data = file.read(1024)
+                if not data:
+                    break
+                tcpSocket.send(data)
+            file.close()
+            tcpSocket.close()
+
+        return message

@@ -7,15 +7,22 @@ import sys
 
 serverUDPPort = int(sys.argv[2])
 serverName = str(sys.argv[1])
+bufferSize = 1024
 
 serverAddress = (serverName, serverUDPPort)
 clientSocket = socket(AF_INET, SOCK_DGRAM)
 clientSocket.connect(serverAddress)
 
-def main():
-    pass
+commandSentence = input("Insert command: ")
+clientSocket.send(commandSentence.encode())
 
-main()
+response, serverAddress = clientSocket.recvfrom(bufferSize)
+response = response.decode()
+print(response)
+
+
+
+
 """ 
 • open – this command starts an interaction session, sending to the server 
 the TCP port number where the client will be waiting for connections.
