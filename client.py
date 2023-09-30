@@ -1,9 +1,6 @@
-""" Clients are invoked by a command line such as:
-python zftp-client server_name UDP_Sport
-where server_name is the name of the server and UDP_Sport is the server port. """
-
 from socket import *
 import sys
+from os import *
 
 serverUDPPort = int(sys.argv[2])
 serverName = str(sys.argv[1])
@@ -13,45 +10,85 @@ serverAddress = (serverName, serverUDPPort)
 clientSocket = socket(AF_INET, SOCK_DGRAM)
 clientSocket.connect(serverAddress)
 
-commandSentence = input("Insert command: ")
-clientSocket.send(commandSentence.encode())
+while True:
+    commandSentence = input("Insert command: ")
 
-response, serverAddress = clientSocket.recvfrom(bufferSize)
-response = response.decode()
-print(response)
+    command = commandSentence.split()[0]
 
-
-
-
-""" 
-• open – this command starts an interaction session, sending to the server 
-the TCP port number where the client will be waiting for connections.
-Syntax: Errors:
-Example:
-open <port>
-(1) invalid number of arguments; (2) invalid port number;
-open 55555
-
-• close – this command ends an interaction session. Syntax: close
-Example: close
-
-• get – this command downloads a file from the server, this means to transfer a 
-file from the server file system to the client ́s file system.
-Syntax: Errors:
-Example:
-get <remote_filename> <local_filename>
-(1) invalid number of arguments;
-(2) a file with the indicated name already exists on the client;
-(3) the indicated file does not exist on the server;
-get test1.pdf my_test1.pdf
-
-• put – this command uploads a file to the server, this means 
-transfer a file in the client file system to the server ́s file system.
-Syntax: Errors:
-Example:
-put <local_filename> <remote_filename>
-(1) invalid number of arguments;
-(2) the indicated file does not exist on the client;
-(3) a file with the indicated name already exists on the server; put my_test1.pdf test1_server.pdf 
-
-"""
+    if command == "close":
+        clientSocket.send(commandSentence.encode())
+        print("Connection closed")
+        break
+    
+    elif command == "open":
+        if len(commandSentence.split()) != 2:
+            print("Connection refused with error: nack 1: Invalid number of arguments")
+        elif len(commandSentence.split()[1]) != 5:
+            print("Connection refused with error: nack 2: Invalid port number")
+        else:
+            clientSocket.send(commandSentence.encode())
+            response, serverAddress = clientSocket.recvfrom(bufferSize)
+            response = response.decode()
+            if response == "ack":
+                print("Connection established")
+                tcpSocket = socket(AF_INET, SOCK_STREAM)
+                tcpSocket.bind((serverName, int(commandSentence.split()[1])))
+                tcpSocket.listen(1)   
+            else:
+                print("Connection refused with error: " + response)
+        continue        
+    
+    else:
+        if len(commandSentence.split()) != 3:
+            print("Connection refused with error: nack 1: Invalid number of arguments")
+            continue
+        if command == "put":
+            localFile = commandSentence.split()[1]
+            remoteFile = commandSentence.split()[2]
+            if not path.exists(localFile):
+                print("Connection refused with error: nack 2: The indicated file does not exist on the client")
+                continue
+            else:
+                newMessage = command + " " + remoteFile
+                clientSocket.send(newMessage.encode())
+                response, serverAddress = clientSocket.recvfrom(bufferSize)
+                response = response.decode()
+                if response == "nack 3":
+                    print("Connection refused with error: nack 3: A file with the indicated name already exists on the server")
+                if response == "ack":
+                    localFile = open(localFile, 'rb')
+                    connSocket, addr = tcpSocket.accept()
+                    while True:
+                        data = connSocket.recv(bufferSize)
+                        if not data:
+                            break
+                        localFile.write(data)
+                    localFile.close()
+                    connSocket.close()
+                    tcpSocket.close()
+                    print("File uploaded")
+        elif command == "get":
+            localFile = commandSentence.split()[2]
+            remoteFile = commandSentence.split()[1]
+            if path.exists(localFile):
+                print("Connection refused with error: nack 2: A file with the indicated name already exists on the client")
+            else:
+                newMessage = command + " " + remoteFile
+                clientSocket.send(newMessage.encode())
+                response, serverAddress = clientSocket.recvfrom(bufferSize)
+                response = response.decode()
+                if response == "nack 3":
+                    print("Connection refused with error: nack 3: The indicated file does not exist on the server")
+                if response == "ack":
+                    localFile = open(localFile, 'wb')
+                    connSocket, addr = tcpSocket.accept()
+                    while True:
+                        data = connSocket.recv(bufferSize)
+                        if not data:
+                            break
+                        localFile.write(data)
+                    localFile.close()
+                    connSocket.close()
+                    tcpSocket.close()
+                    print("File downloaded")
+clientSocket.close()

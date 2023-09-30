@@ -1,15 +1,6 @@
-""" The server is launched before the client using the following command:
-python zftp-server UDP_SPort
-where UDP_Sport is the UDP port used by the server to receive commands. """
-
-"""
-AS DEFENIÇOES DOS COMMANDOS GET E PUT NAO ESTAO MUITO BEM
-PORQUE NAO PRECEBO O ENUNCIADO
-"""
-
 from socket import *
 import sys
-import os
+from os import *
 
 serverUDPPort = int(sys.argv[1])
 serverName = 'localhost'
@@ -20,6 +11,37 @@ serverSocket.bind((serverName, serverUDPPort))
 print("UDP server up and listening")
 print()
 
+tcpPort = 0
+
+def put(fileName):
+    tcpSocket = socket(AF_INET, SOCK_STREAM)
+    tcpSocket.connect((serverName, tcpPort))
+    tcpSocket.send(commandSentence.encode())
+    file = open(fileName, 'rb')
+    while True:
+        data = file.read(1024)
+        if not data:
+            break
+        tcpSocket.send(data)
+    file.close()
+    tcpSocket.close()
+
+    return "ack"
+
+def get(fileName):
+    tcpSocket = socket(AF_INET, SOCK_STREAM)
+    tcpSocket.connect((serverName, tcpPort))
+    file = open(fileName, 'wb')
+    while True:
+        data = tcpSocket.recv(1024)
+        if not data:
+            break
+        file.write(data)
+    file.close()    
+    tcpSocket.close()
+
+    return "ack"
+
 while True:
     commandSentence, clientAddress = serverSocket.recvfrom(bufferSize)
     commandSentence = commandSentence.decode()
@@ -27,83 +49,35 @@ while True:
     print("From: " + str(clientAddress))
     print()
 
-    tcpPort = 0 
     command = commandSentence.split()[0]
 
     messageToSend = ""
 
     match command:
         case 'open':
-            messageToSend = open()       
+            if tcpPort == 0:
+                tcpPort = int(commandSentence.split()[1])
+                messageToSend = "ack"
+            else:
+                messageToSend = "nack 2: already one client connected" 
         case 'close':
-            messageToSend = "ack"
-        case 'get':
-            messageToSend = get()
+            tcpPort = 0
+            messageToSend = "ack"      
         case 'put':
-            messageToSend = put()
+            remoteFile = commandSentence.split()[1]
+            if path.exists(remoteFile):
+                messageToSend = "nack 3: A file with the indicated name already exists on the server"
+                continue
+            else:
+                messageToSend = put(remoteFile)
+        case 'get':
+            remoteFile = commandSentence.split()[1]
+            if not path.exists(remoteFile):
+                messageToSend = "nack 3: The indicated file does not exist on the server"
+                continue
+            else:
+                messageToSend = get(remoteFile)
         case _:
-            messageToSend = "nack 1"
+            messageToSend = "this must never happen"
 
     serverSocket.sendto(messageToSend.encode(), clientAddress)
-
-    def open():
-        message = ""
-        if len(commandSentence.split()) != 2:
-            message = "nack 1";  
-        else:
-            try:
-                tcpPort = int(commandSentence.split()[1])
-                message = "ack"
-            except ValueError:
-                message = "nack 2"
-        return message
-
-    def get():
-        message = ""
-
-        if len(commandSentence.split()) != 3:
-            message = "nack 1"
-        elif commandSentence.split()[1] in os.listdir():
-            message = "nack 2"
-        elif commandSentence.split()[1] not in os.listdir():
-            message = "nack 3"
-        else:
-
-            tcpSocket = socket(AF_INET, SOCK_STREAM)
-            tcpSocket.connect((serverName, tcpPort))
-            tcpSocket.send(commandSentence.encode())
-            file = open(commandSentence.split()[1], 'wb')
-            while True:
-                data = tcpSocket.recv(1024)
-                if not data:
-                    break
-                file.write(data)
-            file.close()    
-            tcpSocket.close()
-
-        return message
-
-    def put():
-        message = ""
-
-        if len(commandSentence.split()) != 3:
-            message = "nack 1"
-        elif commandSentence.split()[1] in os.listdir():
-            message = "nack 2"
-        elif commandSentence.split()[1] not in os.listdir():
-            message = "nack 3"
-        else:
-
-            tcpSocket = socket(AF_INET, SOCK_STREAM)
-            tcpSocket.connect((serverName, tcpPort))
-            tcpSocket.send(commandSentence.encode())
-            file = open(commandSentence.split()[1], 'rb')
-            while True:
-                data = file.read(1024)
-                if not data:
-                    break
-                tcpSocket.send(data)
-            file.close()
-            tcpSocket.close()
-
-        return message
