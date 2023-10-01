@@ -62,7 +62,7 @@ while True:
             tcpPort = 0
             messageToSend = "ack"      
         case 'put':
-            remoteFile = str(commandSentence.split()[1])
+            remoteFile = commandSentence.split()[1]
             if path.exists(remoteFile):
                 messageToSend = "nack 3: A file with the indicated name already exists on the server"
                 continue
@@ -70,7 +70,7 @@ while True:
                 put(remoteFile)
                 messageToSend = "ack"
         case 'get':
-            remoteFile = str(commandSentence.split()[1])
+            remoteFile = commandSentence.split()[1]
             if not path.exists(remoteFile):
                 messageToSend = "nack 3: The indicated file does not exist on the server"
                 continue
