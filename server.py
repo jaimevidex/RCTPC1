@@ -13,11 +13,12 @@ print()
 
 tcpPort = 0
 
-def put(fileName):
+def put(remoteFile):
+    remoteFile = str(remoteFile)
     tcpSocket = socket(AF_INET, SOCK_STREAM)
     tcpSocket.connect((serverName, tcpPort))
     tcpSocket.send(commandSentence.encode())
-    file = open(fileName, 'rb')
+    file = open(remoteFile, 'rb')
     while True:
         data = file.read(1024)
         if not data:
@@ -26,12 +27,11 @@ def put(fileName):
     file.close()
     tcpSocket.close()
 
-    return "ack"
-
-def get(fileName):
+def get(remoteFile):
+    print(remoteFile)
     tcpSocket = socket(AF_INET, SOCK_STREAM)
     tcpSocket.connect((serverName, tcpPort))
-    file = open(fileName, 'wb')
+    file = open(remoteFile, 'wb')
     while True:
         data = tcpSocket.recv(1024)
         if not data:
@@ -39,8 +39,6 @@ def get(fileName):
         file.write(data)
     file.close()    
     tcpSocket.close()
-
-    return "ack"
 
 while True:
     commandSentence, clientAddress = serverSocket.recvfrom(bufferSize)
@@ -64,19 +62,21 @@ while True:
             tcpPort = 0
             messageToSend = "ack"      
         case 'put':
-            remoteFile = commandSentence.split()[1]
+            remoteFile = str(commandSentence.split()[1])
             if path.exists(remoteFile):
                 messageToSend = "nack 3: A file with the indicated name already exists on the server"
                 continue
             else:
-                messageToSend = put(remoteFile)
+                put(remoteFile)
+                messageToSend = "ack"
         case 'get':
-            remoteFile = commandSentence.split()[1]
+            remoteFile = str(commandSentence.split()[1])
             if not path.exists(remoteFile):
                 messageToSend = "nack 3: The indicated file does not exist on the server"
                 continue
             else:
-                messageToSend = get(remoteFile)
+                get(remoteFile)
+                messageToSend = "ack"
         case _:
             messageToSend = "this must never happen"
 

@@ -55,6 +55,7 @@ while True:
                 response = response.decode()
                 if response == "nack 3":
                     print("Connection refused with error: nack 3: A file with the indicated name already exists on the server")
+                    continue
                 if response == "ack":
                     localFile = open(localFile, 'rb')
                     connSocket, addr = tcpSocket.accept()
@@ -72,6 +73,7 @@ while True:
             remoteFile = commandSentence.split()[1]
             if path.exists(localFile):
                 print("Connection refused with error: nack 2: A file with the indicated name already exists on the client")
+                continue
             else:
                 newMessage = command + " " + remoteFile
                 clientSocket.send(newMessage.encode())
@@ -79,6 +81,7 @@ while True:
                 response = response.decode()
                 if response == "nack 3":
                     print("Connection refused with error: nack 3: The indicated file does not exist on the server")
+                    continue
                 if response == "ack":
                     localFile = open(localFile, 'wb')
                     connSocket, addr = tcpSocket.accept()
