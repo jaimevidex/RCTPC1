@@ -1,8 +1,7 @@
-# RCTPC1 — Remote File Store over UDP + TCP
+# Remote File Store over UDP + TCP
 
 A small client/server pair that exposes a remote file API: the control channel runs over **UDP**, while the actual bytes move over **TCP** connections opened on demand.
 
-Written in Python for the *Redes de Computadores* course at Instituto Superior Técnico.
 
 ## Design
 
